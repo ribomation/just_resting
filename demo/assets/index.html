@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet"
+          href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.2/css/bootstrap.min.css"
+          integrity="sha384-Smlep5jCw/wG7hdkwQ/Z5nLIefveQRIY9nfy6xoR1uRYBtpZgI6339F5dgvm/e9B"
+          crossorigin="anonymous">
+    <link rel="stylesheet" href="css/style.css"/>
+    <title>Simple Books</title>
+</head>
+<body>
+    <div class="container">
+        <div class="row mt-3">
+            <div class="col">
+                <h1>Simple Books App</h1>
+            </div>
+        </div>
+
+        <div class="row mt-1 mb-4">
+            <div class="col-8">
+                <form>
+                    <fieldset>
+                        <legend>Login Form</legend>
+                        <div class="form-row">
+                            <div class="form-group col-4">
+                                <label for="username">Username</label>
+                                <input type="text" id="username" class="form-control"/>
+                            </div>
+                            <div class="form-group col-4">
+                                <label for="password">Password</label>
+                                <input type="password" id="password" class="form-control"/>
+                            </div>
+                            <div class="form-group col-2">
+                                <label>&nbsp;</label>
+                                <button type="button" id="login" class="form-control btn btn-primary">Login</button>
+                            </div>
+                            <div class="form-group col-2">
+                                <label>&nbsp;</label>
+                                <button type="button" id="logout" class="form-control btn btn-secondary">Logout</button>
+                            </div>
+                        </div>
+                    </fieldset>
+                </form>
+            </div>
+            <div class="col-4">
+                <fieldset>
+                    <legend>Auth Status</legend>
+                    <table>
+                        <tr>
+                            <th>Authenticated</th>
+                            <td id="auth-authenticated"></td>
+                        </tr>
+                        <tr>
+                            <th>Token</th>
+                            <td id="auth-token"></td>
+                        </tr>
+                        <tr>
+                            <th>Username</th>
+                            <td id="auth-username"></td>
+                        </tr>
+                        <tr>
+                            <th>Message</th>
+                            <td id="auth-message" class="text-danger"></td>
+                        </tr>
+                    </table>
+                </fieldset>
+            </div>
+        </div>
+
+
+        <div class="row mt-1 mb-4">
+            <div class="col">
+                <form>
+                    <fieldset>
+                        <legend>Create/Edit Book</legend>
+
+                        <div class="form-row">
+                            <div class="form-group col-5">
+                                <label for="title">Title</label>
+                                <input type="text" id="title" class="form-control edit-field"/>
+                            </div>
+                            <div class="form-group col-5">
+                                <label for="author">Author</label>
+                                <input type="text" id="author" class="form-control edit-field"/>
+                            </div>
+                            <div class="form-group col-1">
+                                <label for="price">Price</label>
+                                <input type="number" id="price" class="form-control edit-field" min="0" step="5"/>
+                            </div>
+                            <div class="form-group col-1">
+                                <label for="pages"># Pages</label>
+                                <input type="number" id="pages" class="form-control edit-field" min="0" step="1"/>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <button type="button" id="save-book" class="btn btn-success">SAVE</button>
+                                <button type="button" id="clear" class="btn btn-default">Clear</button>
+                            </div>
+                        </div>
+                    </fieldset>
+                </form>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col">
+                <table class="table table-bordered table-hover">
+                    <thead class="bg-primary text-light">
+                    <tr>
+                        <th>ID</th>
+                        <th>Title</th>
+                        <th>Author</th>
+                        <th>Price</th>
+                        <th># Pages</th>
+                        <th>Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody id="books-list"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="row mt-5">
+            <div class="col">
+                <hr/>
+                <img src="img/blue-parrot-large.png" height="100" class="float-left"/>
+                <p>
+                    Powered by: <strong>JustRESTing</strong>, version 0.1.<br/>
+                    &copy; Ribomation AB, Stockholm/Sweden.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"
+            integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+            crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"
+            integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49"
+            crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.2/js/bootstrap.min.js"
+            integrity="sha384-o+RDsa0aLu++PJvFqy8fFScvbHFLtbvScb8AjopnFD+iEQ7wo/CG0xlczd+2O/em"
+            crossorigin="anonymous"></script>
+    <script src="js/app.js"></script>
+    <script>
+        $(() => {
+            loadAll();
+            $('#clear').click(clear);
+            $('#save-book').click(saveBook);
+            $('#login').click(login);
+            $('#logout').click(logout);
+        });
+    </script>
+</body>
+</html>

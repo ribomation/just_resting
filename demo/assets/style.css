@@ -1,0 +1,17 @@
+
+body {
+    font-family: sans-serif;
+    color: navy;
+}
+
+fieldset {
+    border: thin solid #555;
+    padding: 0.25rem 1rem;
+}
+
+fieldset legend {
+    margin-left: 0.5rem;
+    background-color: transparent;
+}
+
+
