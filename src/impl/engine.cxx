@@ -8,7 +8,7 @@
 #include <sys/utsname.h>
 
 #include "engine.hxx"
-#include "utils/string-utils.hxx"
+#include "string-utils.hxx"
 
 namespace justresting {
     using namespace std;

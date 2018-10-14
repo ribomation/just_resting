@@ -36,9 +36,9 @@ namespace justresting {
 
 
         string uri() const { return uri_; }
-        string mimeType(fs::path asset) const;
-        void operator()(Request& req, Response& res);
+        void operator ()(Request& req, Response& res);
 
+        static string mimeType(fs::path asset);
         static void addMimeType(string ext, string type);
     };
 

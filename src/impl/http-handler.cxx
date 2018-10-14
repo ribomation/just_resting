@@ -64,7 +64,8 @@ namespace justresting {
             auto route = findRoute(request);
             filters[0]->invoke(request, response, *route);
         } catch (ClientClosedConnection& err) {
-            cerr << "*** Connection closed " << err.what() << endl;
+            response.close();
+        } catch (Timeout& err) {
             response.close();
         } catch (RouteNotFound& err) {
             cerr << "*** Route not found " << err.what() << endl;
@@ -72,17 +73,11 @@ namespace justresting {
         } catch (MalformedRequest& err) {
             cerr << "*** Malformed REQ " << err.what() << endl;
             response.status(400, err.what());
-        } catch (Timeout& err) {
-            cerr << "*** " << err.what() << endl;
-            cerr << "    " << request.method() << " " << request.path() << endl;
-            response.status(408, err.what());
         } catch (ReadError& err) {
             cerr << "*** Read error " << err.what() << endl;
-            cerr << "    " << request.method() << " " << request.path() << endl;
             response.status(400, err.what());
         } catch (runtime_error& err) {
             cerr << "*** Unknown error " << err.what() << endl;
-            cerr << "    " << request.method() << " " << request.path() << endl;
             response.status(400, err.what());
         }
     }
@@ -245,9 +240,9 @@ namespace justresting {
 
 
     void HttpHandler::dumpChunk(char* chunkStart, ssize_t size) {
-        cerr << "\n\n>>> REQ payload-size=" << size << "\n";
         if (size <= 0) return;
 
+        cerr << "\n\n>>> REQ payload-size=" << size << "\n";
         string_view chunk{chunkStart, min<unsigned long>(size, options.debug_max_payload_trace_size)};
         auto        count = 0U;
         for_each(chunk.begin(), chunk.end(), [&](char ch) {

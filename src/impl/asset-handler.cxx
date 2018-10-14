@@ -17,11 +17,11 @@ namespace justresting {
             {".js"s,   "application/javascript"s},
             {".json"s, "application/json"s},
             {".xml"s,  "application/xml"s},
-            {".zip"s,  "application/zup"s},
+            {".zip"s,  "application/zip"s},
             {".csv"s,  "text/csv"s},
     };
 
-    string AssetHandler::mimeType(fs::path asset) const {
+    string AssetHandler::mimeType(fs::path asset)  {
         string ext = asset.extension();
         auto   it  = mimeTypes.find(ext);
         if (it != mimeTypes.end()) return it->second;
@@ -36,7 +36,7 @@ namespace justresting {
         ifstream file{asset, ios::binary};
         if (!file) throw runtime_error{"cannot open asset file: "s + asset.string()};
 
-        char* buffer = new char[size];
+        auto buffer = new char[size];
         file.read(buffer, size);
         unique_ptr<char[]> body{buffer};
         res.body(move(body), size);

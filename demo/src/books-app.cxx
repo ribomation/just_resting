@@ -10,11 +10,11 @@
 #include "response.hxx"
 #include "filter.hxx"
 #include "route.hxx"
-#include "json/json.hpp"
+#include "../libs/json.hpp"
 
-#include "samples/books-app/books.hxx"
-#include "samples/books-app/log-filter.hxx"
-#include "samples/books-app/auth-filter.hxx"
+#include "books.hxx"
+#include "log-filter.hxx"
+#include "auth-filter.hxx"
 
 using namespace std;
 using namespace std::literals;
@@ -68,7 +68,7 @@ int main(int argc, char** argv) {
     app.filter(&logFilter);
     app.filter(&authFilter);
     app.filter(&jsonFilter);
-    app.assets("../src/samples/books-app/assets"s);
+    app.assets("../../demo/assets"s);
     app.debug(true);
 
 
