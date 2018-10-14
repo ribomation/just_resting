@@ -26,27 +26,6 @@ namespace justresting {
     using namespace std;
     using namespace std::literals;
 
-    struct ClientClosedConnection : runtime_error {
-        ClientClosedConnection() : runtime_error{"Connection closed by client: "s + strerror(errno)} {}
-    };
-
-    struct Timeout : runtime_error {
-        Timeout(unsigned numSeconds) : runtime_error{"Timeout after "s + to_string(numSeconds) + " seconds"s} {}
-    };
-
-    struct ReadError : runtime_error {
-        ReadError() : runtime_error{"Socket RECV failed: "s + strerror(errno)} {}
-    };
-
-    struct MalformedRequest : runtime_error {
-        MalformedRequest(string msg) : runtime_error{"Malformed REQ: "s + msg} {}
-    };
-
-    struct RouteNotFound : runtime_error {
-        RouteNotFound(string_view method, string_view uri) : runtime_error{
-                "\""s + string(method) + " "s + string(uri) + "\""s} {}
-    };
-
 
     void HttpHandler::run(int fromClientFd, int toClientFd, string clientIP) {
         RequestImpl  request;
@@ -57,19 +36,23 @@ namespace justresting {
     }
 
 
-    void HttpHandler::receiveRequest(int fromClientFd, RequestImpl& request, ResponseImpl& response, unsigned long payloadSize) {
+    void HttpHandler::receiveRequest(int fromClientFd, RequestImpl& request, ResponseImpl& response,
+                                     unsigned long payloadSize) {
         auto payload = make_unique<char[]>(payloadSize);
         try {
             loadAndParseRequest(fromClientFd, request, payload.get(), payloadSize);
-            auto route = findRoute(request);
-            filters[0]->invoke(request, response, *route);
+            auto route = getRoute(request, routes);
+            if (route.has_value()) {
+                filters[0]->invoke(request, response, route.value());
+            } else {
+                string uri = string{request.method()} + " "s + string{request.path()};
+                cerr << "*** Route not found: " << uri << endl;
+                response.status(404, uri);
+            }
         } catch (ClientClosedConnection& err) {
             response.close();
         } catch (Timeout& err) {
             response.close();
-        } catch (RouteNotFound& err) {
-            cerr << "*** Route not found " << err.what() << endl;
-            response.status(404, err.what());
         } catch (MalformedRequest& err) {
             cerr << "*** Malformed REQ " << err.what() << endl;
             response.status(400, err.what());
@@ -154,25 +137,62 @@ namespace justresting {
     }
 
 
-    Route* HttpHandler::findRoute(RequestImpl& request) {
-        string indexFile{request.path()};
-        if (indexFile[indexFile.size() - 1] == '/') indexFile += "index.html"s;
+    auto HttpHandler::parseRequestLine(string_view line) -> tuple<string_view, string_view, string_view> {
+        //GET<SP1>/file<SP2>HTTP/1.0
+        const auto SPACE = " "sv;
 
-        for (auto& route : routes) {
-            if (route.method == request.method()) {
-                if (route.path == request.path() || route.path == indexFile) {
-                    return &route;
+        const auto space1 = line.find(SPACE, 0);
+        if (space1 == string_view::npos) throw MalformedRequest{"Method"s, line};
+
+        const auto space2 = line.find(SPACE, space1 + 1);
+        if (space2 == string_view::npos) throw MalformedRequest{"Path", line};
+
+        return make_tuple(
+                line.substr(0, space1),
+                line.substr(space1 + 1, space2 - space1 - 1),
+                line.substr(space2 + 1));
+    }
+
+
+    auto HttpHandler::parseHeaderLine(string_view headerLine) -> tuple<string_view, string_view> {
+        const auto COLON       = ":"sv;
+        const auto COLON_SPACE = ": "sv;
+        auto       colon       = headerLine.find(COLON);
+        if (colon == string_view::npos) throw MalformedRequest{"Header"s, headerLine};
+
+        auto name  = headerLine.substr(0, colon);
+        auto value = headerLine.substr(headerLine.find_first_not_of(COLON_SPACE, colon));
+        return make_tuple(name, value);
+    }
+
+
+    bool HttpHandler::hasRequestBody(Request& req) {
+        return (req.method() == "POST"sv) || (req.method() == "PUT"sv);
+    }
+
+
+    auto HttpHandler::getRoute(RequestImpl& req, vector<Route>& routes) -> optional<Route> {
+        string_view method = req.method();
+        string_view path   = req.path();
+
+        for (auto& r : routes) {
+            if (method == r.method) {
+                if (r.path == path) {
+                    return {r};
                 }
-                if (auto at = route.path.find("@"s); at != string::npos) {
-                    if (route.path.compare(0, at, request.path(), 0, at) == 0) {
-                        request.param_ = request.path().substr(at);
-                        return &route;
+                if (path.back() == '/' && r.path == (string{path} + "index.html"s)) {
+                    return {r};
+                }
+                if (auto at = r.path.find("@"s); at != string::npos) {
+                    if (r.path.compare(0, at, path, 0, at) == 0) {
+                        req.param_ = path.substr(at);
+                        return {r};
                     }
                 }
             }
         }
 
-        throw RouteNotFound{request.method(), request.path()};
+        return {};
     }
 
 
@@ -187,8 +207,9 @@ namespace justresting {
         }
 
         auto      now = time(nullptr);
-        struct tm tm  = *gmtime(&now);
-        char      dateBuffer[128];
+        struct tm tm{};
+        gmtime_r(&now, &tm);
+        char dateBuffer[128];
         strftime(dateBuffer, sizeof(dateBuffer), "%a, %d %b %Y %H:%M:%S %Z", &tm);
 
         dprintf(toClientFd, "%s: %s%s", "Server", "JustRESTing/0.1", CRNL);
@@ -200,42 +221,6 @@ namespace justresting {
         if (!response.body().empty()) {
             write(toClientFd, response.bodyData(), response.contentLength());
         }
-    }
-
-
-    tuple<string_view, string_view, string_view>
-    HttpHandler::parseRequestLine(string_view line) {
-        //GET<SP1>/file<SP2>HTTP/1.0
-        const auto SPACE = " "sv;
-
-        const auto space1 = line.find(SPACE, 0);
-        if (space1 == string_view::npos) throw MalformedRequest{"HTTP Method"};
-
-        const auto space2 = line.find(SPACE, space1 + 1);
-        if (space2 == string_view::npos) throw MalformedRequest{"HTTP Path"};
-
-        return make_tuple(
-                line.substr(0, space1),
-                line.substr(space1 + 1, space2 - space1 - 1),
-                line.substr(space2 + 1));
-    }
-
-
-    tuple<string_view, string_view>
-    HttpHandler::parseHeaderLine(string_view headerLine) {
-        const auto COLON       = ":"sv;
-        const auto COLON_SPACE = ": "sv;
-        auto       colon       = headerLine.find(COLON);
-        if (colon == string_view::npos) throw MalformedRequest{"HTTP Header: ["s + string{headerLine} + "]"s};
-
-        auto name  = headerLine.substr(0, colon);
-        auto value = headerLine.substr(headerLine.find_first_not_of(COLON_SPACE, colon));
-        return make_tuple(name, value);
-    }
-
-
-    bool HttpHandler::hasRequestBody(Request& req) {
-        return (req.method() == "POST"sv) || (req.method() == "PUT"sv);
     }
 
 

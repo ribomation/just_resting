@@ -10,7 +10,7 @@ add_executable(unit-tests
         string-utils-test.cxx
         assets-handler-test.cxx
         response-test.cxx
-        )
+        http-handler-test.cxx)
 target_compile_options(unit-tests       PUBLIC -Wall -Wextra -Werror -Wfatal-errors)
 target_include_directories(unit-tests   PUBLIC libs ../api ../impl)
 target_link_libraries(unit-tests        just_resting)
