@@ -1,4 +1,6 @@
-const baseUri = 'http://localhost:4242';
+// const baseUri = 'http://localhost:4200';
+const baseUri = '';
+
 let editId = undefined;
 let auth = {
     authenticated: false,

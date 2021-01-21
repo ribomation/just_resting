@@ -4,11 +4,9 @@
 #include <string>
 #include <string_view>
 
-#include "request.hxx"
-#include "response.hxx"
-#include "filter.hxx"
+#include "just_resting.hxx"
 
-using namespace justresting;
+using namespace just_resting;
 
 struct AuthFilter : Filter {
     const unordered_set<string_view> authMethods = {

@@ -1,22 +1,22 @@
-cmake_minimum_required(VERSION 3.10)
-project(just-resting-demo LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
-
-add_executable(books
+add_executable(books)
+target_sources(books PRIVATE
+        libs/json.hpp
         src/books.hxx
         src/auth-filter.hxx
         src/log-filter.hxx
-        libs/json.hpp
+        src/json-filter.hxx
         src/books-app.cxx
         )
-
-target_link_libraries(books
-        just_resting
-        stdc++fs
+target_include_directories(books PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/libs
+        )
+target_link_libraries(books PRIVATE
+        just_resting --static
         )
 
-
-
+add_custom_command(TARGET books    POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_CURRENT_SOURCE_DIR}/assets
+        $<TARGET_FILE_DIR:books>/assets
+        )

@@ -4,11 +4,9 @@
 #include <iomanip>
 #include <chrono>
 
-#include "request.hxx"
-#include "response.hxx"
-#include "filter.hxx"
+#include "just_resting.hxx"
 
-using namespace justresting;
+using namespace just_resting;
 
 struct LogFilter : Filter {
     LogFilter() = default;

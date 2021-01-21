@@ -1,77 +1,65 @@
 #include <iostream>
 #include <sstream>
-#include <iomanip>
 #include <optional>
+#include <random>
 #include <unordered_set>
 #include <unordered_map>
 
-#include "application.hxx"
-#include "request.hxx"
-#include "response.hxx"
-#include "filter.hxx"
-#include "route.hxx"
-#include "../libs/json.hpp"
+#include "just_resting.hxx"
+#include "json.hpp"
 
 #include "books.hxx"
 #include "log-filter.hxx"
 #include "auth-filter.hxx"
+#include "json-filter.hxx"
 
 using namespace std;
 using namespace std::literals;
-using namespace justresting;
+using namespace just_resting;
 using nlohmann::json;
 
+using UserDB = unordered_map<string, string>;
+using TokenStore = unordered_set<string>;
 
-struct JsonFilter : Filter {
-    void invoke(Request& req, Response& res, Route& route) override {
-        next()->invoke(req, res, route);
-
-        if (any maybe = res.attribute("books"s); maybe.has_value()) {
-            auto booksList = any_cast<vector<books::Book>>(maybe);
-            json jsonList  = json::array();
-            for (auto& book : booksList) {
-                json jsonBook;
-                books::to_json(jsonBook, book);
-                jsonList.push_back(jsonBook);
-            }
-            res.type("application/json"s);
-            res.body(jsonList.dump(1));
-        }
-
-        if (any maybe = res.attribute("book"s); maybe.has_value()) {
-            auto book = any_cast<books::Book>(maybe);
-            json jsonBook;
-            books::to_json(jsonBook, book);
-            res.type("application/json"s);
-            res.body(jsonBook.dump(1));
-        }
-
-    }
-};
-
-string createToken() {
-    return "qwertyuiop"s;
-}
+string createToken();
+bool isValid(string username, string password, UserDB& users);
+void authRoutes(Application& app, UserDB& users, TokenStore& authTokens);
+void bookRoutes(Application& app);
 
 
 int main(int argc, char** argv) {
-    unordered_set<string>         authTokens;
-    unordered_map<string, string> users      = {
-            {"nisse"s, "hult"s}
+    auto users = UserDB{
+            {"nisse"s,  "hult"s},
+            {"anna"s,   "conda"s},
+            {"justin"s, "time"s},
     };
 
-    AuthFilter  authFilter{authTokens};
-    LogFilter   logFilter;
-    JsonFilter  jsonFilter;
-    Application app;
+    auto authTokens = TokenStore{};
+    auto authFilter = AuthFilter{authTokens};
+    auto logFilter  = LogFilter{};
+    auto jsonFilter = JsonFilter{};
+    auto app        = Application{};
 
+    app.port(4200, true);
     app.filter(&logFilter);
     app.filter(&authFilter);
     app.filter(&jsonFilter);
-    app.assets("../../demo/assets"s);
+    app.assets("./assets"s);
     app.debug(true);
 
+    authRoutes(app, users, authTokens);
+    bookRoutes(app);
+    books::populate();
 
+    cout << app << endl;
+    app.launch([](auto port) {
+        cout << "The books server is up and running. http://localhost:" << port << endl;
+    });
+
+    return 0;
+}
+
+void authRoutes(Application& app, UserDB& users, TokenStore& authTokens) {
     app.route("POST"s, "/auth/login"s, [&](Request& req, Response& res) {
         json data = json::parse(req.body());
         cout << "JSON: " << data.dump(2) << endl;
@@ -79,11 +67,11 @@ int main(int argc, char** argv) {
         if (data.count("username"s) || data.count("password"s)) {
             auto username = data.at("username").get<string>();
             auto password = data.at("password").get<string>();
-            if (users.count(username) > 0 && users[username] == password) {
+            if (isValid(username, password, users)) {
                 auto token = createToken();
                 authTokens.insert(token);
                 json reply = {
-                        {"token", token},
+                        {"token",    token},
                         {"username", username},
                 };
                 res.body(reply.dump(1));
@@ -107,7 +95,9 @@ int main(int argc, char** argv) {
             res.status(400, "no token"s);
         }
     });
+}
 
+void bookRoutes(Application& app) {
     app.route("GET"s, "/books"s, [&](Request& req, Response& res) {
         auto bookList = books::all();
         res.attribute("books"s, bookList);
@@ -174,9 +164,21 @@ int main(int argc, char** argv) {
             res.status(404, "id="s + to_string(id));
         }
     });
+}
 
-    books::populate();
-    cout << app << endl;
-    app.launch();
-    return 0;
+bool isValid(string username, string password, UserDB& users) {
+    try {
+        auto its_password = users.at(username);
+        return its_password == password;
+    } catch (...) {
+        return false;
+    }
+}
+
+string createToken() {
+    auto r   = random_device{};
+    auto d   = uniform_int_distribution<long>{999'999, 9'999'999};
+    auto buf = ostringstream{};
+    buf << "qwerty" << d(r);
+    return buf.str();
 }

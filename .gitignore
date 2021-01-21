@@ -1,3 +1,7 @@
-cmake-build-debug/
 .idea/
+cmake-build-debug/
+cmake-build-release/
 build/
+bld/
+dist/
+tmp/
