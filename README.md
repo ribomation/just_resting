@@ -1,12 +1,14 @@
 # JustRESTing - REST Microservices in Modern C++
 An ultra-fast light-weight REST-WS server based on features of C++17
-intended to quickly and easily implement micro-services.
+intended to quickly and easily implement microservices.
 
 The usage model of this framework is inspired by frameworks in other
 languages, such as [Express.js](https://expressjs.com/)  and 
 [SparkJava](https://sparkjava.com/).
 
-## Simple Example
+# Simple Examples
+## Compilation on the command-line
+
 Here is a small *Hello World* example
 
     #include <iostream>
@@ -70,8 +72,79 @@ and, like this from the server side (*debug printouts was enabled*)
     <CR><NL>
     **END**
 
+## Using CMake 
+Although your can download and build the library yourself, and then build your own
+app from the `dist/` artifacts as shown above. However, it's much more easier to use 
+CMake and let it download and configure the library for you, using
+[FetchContent](https://cmake.org/cmake/help/latest/module/FetchContent.html)
 
-## Build
+First create a `CMakeLists.txt` file:
+
+    cmake_minimum_required(VERSION 3.16)
+    project(app LANGUAGES CXX)
+    set(CMAKE_CXX_STANDARD          17)
+    
+    include(FetchContent)
+    FetchContent_Declare(just_resting
+        GIT_REPOSITORY  https://github.com/ribomation/just_resting.git
+        GIT_SHALLOW     true
+        GIT_PROGRESS    true
+        GIT_TAG         main
+    )
+    FetchContent_MakeAvailable(just_resting)
+    
+    add_executable(app app.cxx)
+    target_link_libraries(app PRIVATE just_resting)
+
+Second, create the C++ file `app.cxx` (*simplified version of the hello app above*):
+
+    #include <iostream>
+    #include "just_resting.hxx"
+    using namespace std;
+    using namespace std::literals;
+    using namespace just_resting;
+    
+    int main() {
+        Application srv;
+        srv.port(3500, true);
+        srv.route("GET"s, "/"s, [](Request& req, Response& res) {
+            res.body("Hi there, from a justRESTing microservice"s);
+        });
+        srv.launch([](auto port){
+          cout << "server started. http://localhost:" << port << endl;
+        });
+        return 0;
+    }
+
+Third, build the server app. During the configuration phase of CMake, it will perform 
+a shallow (*just the files, no history*) clone of the 
+[*justRESTing* GIT repo](https://github.com/ribomation/just_resting).
+
+    mkdir bld && cd bld
+    cmake ..
+    cmake --build .
+
+Finally, launch the server, still within the build directory
+
+    ./app
+
+Here is an example of using HTTPie CLI
+
+    http :3500
+
+Which provides the following output:
+
+    HTTP/1.1 200 OK
+    Content-Length: 41
+    Content-Type: text/plain
+    Date: Sat, 23 Jan 2021 13:51:34 GMT
+    Server: JustRESTing/0.1
+    
+    Hi there, from a justRESTing microservice
+
+
+
+# How to Build the Library
 The build system is based on [CMake](https://cmake.org/). Create a build directory, generate the
 build files and then build the library. During the build, it will also run the unit test suite.
 
@@ -82,7 +155,12 @@ build files and then build the library. During the build, it will also run the u
 
 The build output that can be used elsewhere can be found in the `../dist` directory.
 
-## Demo
+## Unit Tests
+You can run the unit tests (based on Catch2) with the following command
+
+    cmake --build . --target test
+
+## Demo App
 There is a small show-case application inside `./demo/` which can be run with the command
 
     cmake --build . --target demo
