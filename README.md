@@ -88,7 +88,6 @@ First create a `CMakeLists.txt` file:
     FetchContent_Declare(just_resting
         GIT_REPOSITORY  https://github.com/ribomation/just_resting.git
         GIT_SHALLOW     true
-        GIT_PROGRESS    true
         GIT_TAG         main
     )
     FetchContent_MakeAvailable(just_resting)
@@ -153,7 +152,13 @@ build files and then build the library. During the build, it will also run the u
     cmake ..
     cmake --build .
 
-The build output that can be used elsewhere can be found in the `../dist` directory.
+## Generate a *dist* archive
+You can generate a tar file which can be used elsewhere. Run the following command
+
+    cmake --build . --target dist
+
+It will generate GZIP:ed TAR file in the build directory, containing the library archive
+(`lib/just_resting.a`) file and the public include files (`include/**.hxx`).
 
 ## Unit Tests
 You can run the unit tests (based on Catch2) with the following command

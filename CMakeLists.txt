@@ -23,7 +23,7 @@ add_custom_target(dist
         COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/lib/api ${DIST_DIR}/include
         COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:just_resting> ${DIST_DIR}/lib/just_resting.a
         COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/README.md ${DIST_DIR}
-        COMMAND ${CMAKE_COMMAND} -E tar czv just_resting.tar.gz ${DIST_DIR}/*
+        COMMAND ${CMAKE_COMMAND} -E tar cz just_resting.tar.gz ${DIST_DIR}/*
         )
 
 add_custom_target(test
