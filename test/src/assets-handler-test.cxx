@@ -10,16 +10,18 @@ using namespace std;
 using namespace std::literals;
 namespace fs = std::filesystem;
 
-SCENARIO("fetching assets", "[asset]") {
+SCENARIO("Assets fetching", "[asset]") {
     GIVEN("an assets dir") {
-        fs::path     assetsDir{"./data"s};
-        RequestImpl  req;
-        ResponseImpl res;
+        auto dir = fs::path{"./data"s};
+        auto req = RequestImpl{};
+        auto res = ResponseImpl{};
+
+        auto asset = [&req, &res, &dir](string file){
+            AssetHandler{dir / file, dir}(req, res);
+        };
 
         WHEN("handling a plain text file") {
-            AssetHandler assetHandler{assetsDir / "sample.txt"s, assetsDir};
-            assetHandler(req, res);
-
+            asset("sample.txt");
             THEN("the body should contain the file") {
                 REQUIRE(res.body().size() == 86UL);
                 REQUIRE(res.contentLength() == 86UL);
@@ -28,28 +30,23 @@ SCENARIO("fetching assets", "[asset]") {
         }
 
         WHEN("handling a HTML file") {
-            AssetHandler assetHandler{assetsDir / "index.html"s, assetsDir};
-            assetHandler(req, res);
-
+            asset("index.html"s);
             THEN("the body should contain the file") {
-                REQUIRE(res.contentLength() == 181UL);
+                REQUIRE(res.contentLength() == 171UL);
                 REQUIRE(res.contentType() == "text/html"s);
             }
         }
 
         WHEN("handling a CSS file in a subdir") {
-            AssetHandler assetHandler{assetsDir / "css/style.css"s, assetsDir};
-            assetHandler(req, res);
-
+            asset("css/style.css"s);
             THEN("the body should contain the file") {
-                REQUIRE(res.contentLength() == 65UL);
+                REQUIRE(res.contentLength() == 55UL);
                 REQUIRE(res.contentType() == "text/css"s);
             }
         }
 
         WHEN("handling an image file") {
-            AssetHandler assetHandler{assetsDir / "blue-parrot-large.png"s, assetsDir};
-            assetHandler(req, res);
+            asset("blue-parrot-large.png"s);
             THEN("the body should be the image") {
                 REQUIRE(res.contentLength() == 159904UL);
                 REQUIRE(res.contentType() == "image/png"s);
@@ -59,10 +56,10 @@ SCENARIO("fetching assets", "[asset]") {
     }
 }
 
-SCENARIO("configuration", "[asset]") {
+SCENARIO("Assets Configuration", "[asset]") {
     GIVEN("an assets handler") {
-        WHEN("checking the mime type") {
-            THEN("it should work") {
+        WHEN("checking a standard mime type") {
+            THEN("it should return the type") {
                 REQUIRE(AssetHandler::mimeType("whatever.png"s) == "image/png"s);
                 REQUIRE(AssetHandler::mimeType("whatever.css"s) == "text/css"s);
                 REQUIRE(AssetHandler::mimeType("whatever.js"s) == "application/javascript"s);
@@ -72,7 +69,7 @@ SCENARIO("configuration", "[asset]") {
 
         WHEN("adding a mime type") {
             AssetHandler::addMimeType(".xyz"s, "application/foobar"s);
-            THEN("it should find the new type") {
+            THEN("it should return the new type") {
                 REQUIRE(AssetHandler::mimeType("whatever.xyz"s) == "application/foobar"s);
                 REQUIRE(AssetHandler::mimeType("whatever.zzz"s) == "application/octet-stream"s);
             }

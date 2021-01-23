@@ -13,9 +13,9 @@ set(WARNING_FLAGS               -Wall -Wextra -Werror -Wfatal-errors)
 set(DIST_DIR                    ${CMAKE_CURRENT_SOURCE_DIR}/dist)
 
 add_subdirectory(lib)
-add_subdirectory(demo)
 add_subdirectory(test)
-add_subdirectory(test-e2e)
+add_subdirectory(demo EXCLUDE_FROM_ALL)
+add_subdirectory(test-e2e EXCLUDE_FROM_ALL)
 
 add_custom_target(dist ALL
         COMMAND ${CMAKE_COMMAND} -E remove_directory ${DIST_DIR}
