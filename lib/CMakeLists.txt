@@ -28,7 +28,7 @@ set(IMPL
 
 add_library(just_resting                    STATIC  ${API} ${IMPL})
 target_include_directories(just_resting     PUBLIC  api )
-target_compile_options(just_resting         PUBLIC ${WARNING_FLAGS} -Wno-unused-parameter)
+target_compile_options(just_resting         PUBLIC ${WARNING_FLAGS} -Wno-unused-parameter -Wno-unused-result)
 target_compile_features(just_resting        PUBLIC cxx_std_17)
 
 
