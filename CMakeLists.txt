@@ -16,6 +16,7 @@ add_subdirectory(lib)
 add_subdirectory(test EXCLUDE_FROM_ALL)
 add_subdirectory(demo EXCLUDE_FROM_ALL)
 add_subdirectory(test-e2e EXCLUDE_FROM_ALL)
+add_library(ribomation::just_resting ALIAS just_resting)
 
 add_custom_target(dist
         COMMAND ${CMAKE_COMMAND} -E remove_directory ${DIST_DIR}
