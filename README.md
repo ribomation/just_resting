@@ -6,9 +6,27 @@ The usage model of this framework is inspired by frameworks in other
 languages, such as [Express.js](https://expressjs.com/)  and 
 [SparkJava](https://sparkjava.com/).
 
-# Simple Examples
-## Compilation on the command-line
+- [Simple Example (CLI)](#simple-example-command-line)
+    - [Hello World App](#hello-world)
+    - [Compilation](#compilation)
+    - [Launch Server](#launch-server)
+    - [Client Output](#client-output)
+    - [Server Output](#server-output)
+- [Simple Example (CMake)](#simple-example-cmake)
+    - [Build File](#build-file)
+    - [App File](#app-file)
+    - [Build](#build)
+    - [Launch](#launch)
+- [Build Library](#how-to-build-the-library)
+    - [Generate a dist archive](#generate-a-dist-archive)
+    - [Unit Tests](#unit-tests)
+    - [Demo App](#demo-app)
+- [Disclaimer](#disclaimer)
 
+
+# Simple Example (command-line)
+
+## Hello World
 Here is a small *Hello World* example
 
     #include <iostream>
@@ -35,10 +53,12 @@ Here is a small *Hello World* example
         return 0;
     }
 
+## Compilation
 Given that the build output is in `../dist` the program can be compiled with 
 
     c++ --std=c++17 -I../dist/include hello.cxx -o hello ../dist/lib/just_resting.a
 
+## Launch Server
 Then, launch the program
 
     > ./hello
@@ -48,6 +68,7 @@ Then, launch the program
     
     Hello server started. URL = http://localhost:4200
 
+## Client Output
 Using a HTTP client such as [HTTPie](https://httpie.io/) it might look like this from the client side
 
     > http  :4200
@@ -59,6 +80,7 @@ Using a HTTP client such as [HTTPie](https://httpie.io/) it might look like this
     
     Hi there
 
+## Server Output
 and, like this from the server side (*debug printouts was enabled*)
     
     client connected: IP=127.0.0.1
@@ -72,12 +94,13 @@ and, like this from the server side (*debug printouts was enabled*)
     <CR><NL>
     **END**
 
-## Using CMake 
+# Simple Example (CMake) 
 Although your can download and build the library yourself, and then build your own
 app from the `dist/` artifacts as shown above. However, it's much more easier to use 
 CMake and let it download and configure the library for you, using
 [FetchContent](https://cmake.org/cmake/help/latest/module/FetchContent.html)
 
+## Build File
 First create a `CMakeLists.txt` file:
 
     cmake_minimum_required(VERSION 3.16)
@@ -93,8 +116,9 @@ First create a `CMakeLists.txt` file:
     FetchContent_MakeAvailable(just_resting)
     
     add_executable(app app.cxx)
-    target_link_libraries(app PRIVATE just_resting)
+    target_link_libraries(app PRIVATE ribomation::just_resting)
 
+## App File
 Second, create the C++ file `app.cxx` (*simplified version of the hello app above*):
 
     #include <iostream>
@@ -115,6 +139,7 @@ Second, create the C++ file `app.cxx` (*simplified version of the hello app abov
         return 0;
     }
 
+## Build
 Third, build the server app. During the configuration phase of CMake, it will perform 
 a shallow (*just the files, no history*) clone of the 
 [*justRESTing* GIT repo](https://github.com/ribomation/just_resting).
@@ -123,6 +148,7 @@ a shallow (*just the files, no history*) clone of the
     cmake ..
     cmake --build .
 
+## Launch
 Finally, launch the server, still within the build directory
 
     ./app
