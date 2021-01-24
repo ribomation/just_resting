@@ -21,6 +21,8 @@ languages, such as [Express.js](https://expressjs.com/)  and
     - [Generate a dist archive](#generate-a-dist-archive)
     - [Unit Tests](#unit-tests)
     - [Demo App](#demo-app)
+- [Using Filters](#using-filters)
+- [Using JSON](#using-json)
 - [Disclaimer](#disclaimer)
 
 
