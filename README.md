@@ -17,7 +17,7 @@ languages, such as [Express.js](https://expressjs.com/)  and
     - [App File](#app-file)
     - [Build](#build)
     - [Launch](#launch)
-- [Build Library](#how-to-build-the-library)
+- [Build the Library](#how-to-build-the-library)
     - [Generate a dist archive](#generate-a-dist-archive)
     - [Unit Tests](#unit-tests)
     - [Demo App](#demo-app)
@@ -197,6 +197,114 @@ There is a small show-case application inside `./demo/` which can be run with th
     cmake --build . --target demo
 
 Then open a browser to [`http://localhost:4200/`](http://localhost:4200/)
+
+
+
+# Using Filters
+A HTTP transaction can be intercepted by one or more filters. Just write a
+class/struct that inherits from `just_resting::Filter` and implement the
+`invoke()` method. 
+
+Here is a simple CORS filter
+
+    struct CorsFilter : just_resting::Filter {
+        void invoke(just_resting::Request& req, just_resting::Response& res, just_resting::Route& route) override {
+            auto const method = req.method();
+
+            if (method == "GET"sv || method == "HEAD"sv) {
+                next()->invoke(req, res, route);
+                res.header("Access-Control-Allow-Origin"s, "*"s);
+            } else if (method == "OPTIONS"sv) {
+                res.status(204, "No content"s);
+                res.header("Content-Length"s, "0"s);
+                res.header("Access-Control-Allow-Origin"s, "*"s);
+
+                auto headers = req.header("Access-Control-Request-Headers");
+                if (headers) {
+                    res.header("Access-Control-Allow-Headers"s, std::string{headers->cbegin(), headers->cend()});
+                }
+
+                auto methods = req.header("Access-Control-Request-Methods");
+                if (methods) {
+                    res.header("Access-Control-Allow-Methods"s, std::string{methods->cbegin(), methods->cend()});
+                }
+            } else {
+                next()->invoke(req, res, route);
+                res.header("Access-Control-Allow-Origin"s, "*"s);
+            }
+        }
+    };
+
+Instantiate the filter and add it. In addition, you need to provide an (empty) OPTIONS route.
+
+    auto API = "/api"s;
+    srv.route("GET"s, API, [](Request& req, Response& res) {
+        res.body("Hi there, from a justRESTing microservice"s);
+    });
+    srv.route("OPTIONS"s, API, [](Request& req, Response& res) { /*empty*/ });
+    srv.route("POST"s, API, [](Request& req, Response& res) {
+        auto txt = string{req.body().cbegin(), req.body().cend()};
+        transform(txt.begin(), txt.end(), txt.begin(), [](auto ch) { return ::toupper(ch); });
+        res.body(txt);
+    });
+
+
+
+# Using JSON
+When it comes to JSON for C++, my favorite is 
+[*JSON for Modern C++* by Niels Lohmann](https://json.nlohmann.me/)
+
+Using _CMake_, you can easily download and configure the library using _FetchContent_. 
+First add this snippet to `CMakeLists.txt`
+
+    FetchContent_Declare(json
+        GIT_REPOSITORY https://github.com/ArthurSonzogni/nlohmann_json_cmake_fetchcontent
+        GIT_TAG v3.9.1
+        GIT_SHALLOW true
+    )
+    FetchContent_MakeAvailable(json)
+
+Second, add the library to your application
+
+    add_executable(app)
+    target_sources(app PRIVATE app.cxx ... )
+    target_link_libraries(tools_srv PRIVATE
+        ribomation::just_resting
+        nlohmann_json::nlohmann_json
+    )
+
+Third, import the header and set the namespace
+
+    #include "nlohmann/json.hpp"
+    namespace js = nlohmann;
+
+Finally, use it
+
+    srv.route("GET"s, uri, [min, max, name](ws::Request& req, ws::Response& res) {
+        auto result = js::json{
+                {"name"s, name},
+                {"min"s,  min},
+                {"max"s,  max},
+        };
+        res.body(result.dump());
+    });
+
+Here is a sample output (using _HTTPie_)
+
+    http  :5000/api/tools/temperature
+    HTTP/1.1 200 OK
+    Access-Control-Allow-Origin: *
+    Content-Length: 42
+    Content-Type: text/plain
+    Date: Sun, 24 Jan 2021 16:04:42 GMT
+    Server: JustRESTing/0.1
+    
+    {
+      "max": 120,
+      "min": -40,
+      "name": "temperature"
+    }
+
 
 ## Disclaimer
 This software is provided *as is*, without any implied warranties etc. 
